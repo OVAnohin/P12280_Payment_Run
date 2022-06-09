@@ -46,16 +46,12 @@ Module Module1
 
     ' *************** in variables
     Dim _oLock As Object = New Object()
-    'Dim _table As System.Data.DataTable = New System.Data.DataTable()
     ' *************** in variables
 
     ' *************** output variables
     Dim exceptionMessage As String
     Dim isComplete As Boolean
-    'Dim isDataPresent As Boolean
     Dim viewPosition As Integer ' количество документов для обработки
-    'Dim isNumberDocumentsEqualNumberSheet As Boolean ' равно ли количество документов для обработки количеству на листе.
-    'Dim isDocumentsChanged As Boolean
     ' *************** output variables
 
     Sub Main()
