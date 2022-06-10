@@ -1050,7 +1050,7 @@ Module Module1
         Return table
     End Function
 
-    Private Function GetIdentifier(ByVal ownBank As String, ByVal sheetName As String, ByVal currency As String, ByVal paymentMethod As String) As String
+    Private Function GetIdentifier(ownBank As String, sheetName As String, currency As String, paymentMethod As String) As String
         Dim identifier As String = ""
         ' Идентификатор (номер прогона по порядку в течение дня)
         If sheetName.Contains("debtors") Then
