@@ -365,18 +365,6 @@ Module Module1
                     End Try
                 End While
 
-                'For i As Integer = 3 To 13
-                '    If session.findById("wnd[1]/usr/lbl[1," & i.ToString() & "]").Text = "Блокировка платежа" Then
-                '        session.findById("wnd[1]/usr/lbl[1," & i.ToString() & "]").setFocus
-                '        session.findById("wnd[1]/usr/lbl[1," & i.ToString() & "]").caretPosition = 35
-                '        session.findById("wnd[1]/tbar[0]/btn[0]").press
-                '        Exit For
-                '    End If
-                '    If i = 13 Then
-                '        Throw New Exception("Закладку «Произвольный выбор». не могу найти 'Блокировка платежа'.")
-                '    End If
-                'Next
-
                 ' Исключить значения первое поле = true
                 If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSEL/ssubSUBSCREEN_BODY:SAPF110V:0203/sub:SAPF110V:0203/chkF110V-XIGNO[0,44]").Selected = False Then
                     session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpSEL/ssubSUBSCREEN_BODY:SAPF110V:0203/sub:SAPF110V:0203/chkF110V-XIGNO[0,44]").selected = True
@@ -404,18 +392,6 @@ Module Module1
                         Throw New Exception("Закладку «Произвольный выбор». не могу найти 'Собственный банк'.")
                     End Try
                 End While
-
-                'For i As Integer = 3 To 13
-                '    If session.findById("wnd[1]/usr/lbl[1," & i.ToString() & "]").Text = "Собственный банк" Then
-                '        session.findById("wnd[1]/usr/lbl[1," & i.ToString() & "]").setFocus
-                '        session.findById("wnd[1]/usr/lbl[1," & i.ToString() & "]").caretPosition = 35
-                '        session.findById("wnd[1]/tbar[0]/btn[0]").press
-                '        Exit For
-                '    End If
-                '    If i = 13 Then
-                '        Throw New Exception("Закладку «Произвольный выбор». не могу найти 'Собственный банк'.")
-                '    End If
-                'Next
 
                 ' Исключить значения второе поле = false
                 If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSEL/ssubSUBSCREEN_BODY:SAPF110V:0203/sub:SAPF110V:0203/chkF110V-XIGNO[3,44]").Selected = True Then
