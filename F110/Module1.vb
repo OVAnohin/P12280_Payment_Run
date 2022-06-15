@@ -38,14 +38,11 @@ Module Module1
 
     ' *************** input variables
     Dim localFolder As String = "C:\Temp\WorkDir"
-    Dim paymentDate As Date = Convert.ToDateTime("14.06.2022")
-    'Dim sheetName As String = "DB - USD, EUR 0" 'это у нас имя листа
-    'Dim sheetName As String = "DB - USD, EUR 1" 'это у нас имя листа
-    Dim sheetName As String = "Citibank - TAP RUB Q 0" 'это у нас имя листа
+    Dim paymentDate As Date = Convert.ToDateTime("18.06.2022")
+    Dim sheetName As String = "Citibank - RUB PM J 2" 'это у нас имя листа
     Dim be As String = "RU17" ' текущая BE
     Dim pathToMailAttachments As String = "\\rus.efesmoscow\DFS\MOSC\Projects.MOSC\Robotic\P12280 Payment Run\WorkDir\MailAttachments"
     Dim runControlTableInXML As String = "RunControlTableRu17.XML"
-    'Dim additionalLogTableXmlFileName As String = "AdditionalLogTableRu17.xml"
     Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu17.xml"
     Dim xmlNameErrors_F110 As String = "Errors_F110Ru17.xml"
     Dim xmlNameJournals As String = "JournalsRu17.xml"
@@ -208,6 +205,12 @@ Module Module1
             If Left(identifier, 3) = Left(oldRunIdentifier, 3) Then
                 identifier = ChangeIdentifier(oldRunIdentifier)
             End If
+        ElseIf isCompleteOldRun AndAlso isRunCreated = False AndAlso identifier = "Zero" AndAlso oldRunIdentifier <> "Zero" AndAlso isCurrentTableComplete = False Then
+            'это когда предыдущий 58 счет (например) прогон выполнен, и у нас ещё есть лист 58 счетов
+            identifier = GetIdentifier(ownBank, sheetName, currency, paymentMethod)
+            If Left(identifier, 3) = Left(oldRunIdentifier, 3) Then
+                identifier = ChangeIdentifier(oldRunIdentifier)
+            End If
         End If
 
         Console.WriteLine(New String("*", 20))
@@ -233,22 +236,26 @@ Module Module1
                     session.findById("wnd[0]/tbar[1]/btn[14]").press
                     Thread.Sleep(300)
 
+                    Console.WriteLine(session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[1,0]").Text)
                     If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[1,0]").Text = "Предложение по платежам создано" Then
                         If Not session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]", False) Is Nothing Then
                             Console.WriteLine(session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]").Text)
                             If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]").Text = "Прогон ПрогПлатежей выполнен" Then
+                                Console.WriteLine(session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]").Text)
                                 'предыдуший прогон успешен 
                                 tablesToRun.Rows(startSearchRow)("IsComplete") = True
+                                tablesToRun.AcceptChanges()
                                 SaveDataTableToFile(localFolder & "\" & tablesToRunFileNameXml, tablesToRun)
                                 ' обновить данные в глобальной таблице
                                 runControlTable = GetTableFromFile(localFolder, runControlTableInXML)
                                 For i As Integer = 0 To runControlTable.Rows.Count - 1
                                     If runControlTable.Rows(i)("SheetName") = oldSheet Then
                                         runControlTable.Rows(i)("IsComplete") = True
-                                        SaveDataTableToFile(localFolder & "\" & runControlTableInXML, runControlTable)
                                         Exit For
                                     End If
                                 Next
+                                runControlTable.AcceptChanges()
+                                SaveDataTableToFile(localFolder & "\" & runControlTableInXML, runControlTable)
                                 runControlTable = New Data.DataTable()
                                 'можно идти дальше
                                 isCompleteOldRun = True
@@ -264,22 +271,25 @@ Module Module1
                     session.findById("wnd[0]/tbar[1]/btn[14]").press
                     Thread.Sleep(300)
 
+                    Console.WriteLine(session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[1,0]").Text)
                     If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[1,0]").Text = "Предложение по платежам создано" Then
                         If Not session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]", False) Is Nothing Then
                             Console.WriteLine(session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]").Text)
-                            If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]").Text = "Прогон ПрогПлатежей выполнен" Then
+                            If session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA/ssubSUBSCREEN_BODY:SAPF110V:0201/sub:SAPF110V:0201/txtF110V-STATU[2,0]").Text = "Прогон ПрогрПлатежей выполнен" Then
                                 'предыдуший прогон успешен 
                                 tablesToRun.Rows(startSearchRow + 1)("IsComplete") = True
+                                tablesToRun.AcceptChanges()
                                 SaveDataTableToFile(localFolder & "\" & tablesToRunFileNameXml, tablesToRun)
                                 ' обновить данные в глобальной таблице
                                 runControlTable = GetTableFromFile(localFolder, runControlTableInXML)
                                 For i As Integer = 0 To runControlTable.Rows.Count - 1
                                     If runControlTable.Rows(i)("SheetName") = sheetName Then
                                         runControlTable.Rows(i)("IsComplete") = True
-                                        SaveDataTableToFile(localFolder & "\" & runControlTableInXML, runControlTable)
                                         Exit For
                                     End If
                                 Next
+                                runControlTable.AcceptChanges()
+                                SaveDataTableToFile(localFolder & "\" & runControlTableInXML, runControlTable)
                                 runControlTable = New Data.DataTable()
                             End If
                         End If
@@ -555,6 +565,7 @@ Module Module1
 
                     ' сохраним если были ошибки
                     If isExceptError Then
+                        tableErrors_F110.AcceptChanges()
                         SaveDataTableToFile(localFolder & "\" & xmlNameErrors_F110, tableErrors_F110)
                         If SaveTableToExcel(localFolder, xlsbNameNotIncludedTable, tableErrors_F110, 2, exceptionMessage) = False Then
                             Throw New Exception("Не могу сохранить данные в '" & xlsbNameNotIncludedTable & "'")
@@ -615,6 +626,7 @@ Module Module1
                         tableJournals = MergeTwoTables(tableJournals, dataFromExcel)
                         tableJournals.TableName = "JournalsLog"
                         'тут надо dataFromExcel типа сохранить на лист, это у нас то что не вошло в выбор документов
+                        tableJournals.AcceptChanges()
                         SaveDataTableToFile(localFolder & "\" & xmlNameJournals, tableJournals)
                         If SaveTableToExcel(localFolder, xlsbNameNotIncludedTable, tableJournals, 3, exceptionMessage) = False Then
                             Throw New Exception("Не могу сохранить данные в '" & xlsbNameNotIncludedTable & "'")
@@ -981,7 +993,7 @@ Module Module1
         Return Process.GetProcessById(id)
     End Function
 
-    Private Sub SaveDataTableToFile(ByVal fileName As String, ByVal table As System.Data.DataTable)
+    Private Sub SaveDataTableToFile(fileName As String, table As System.Data.DataTable)
         Dim Stream As FileStream = New FileStream(fileName, FileMode.Create)
         Dim serializer As XmlSerializer = New XmlSerializer(table.GetType())
         serializer.Serialize(Stream, table)
