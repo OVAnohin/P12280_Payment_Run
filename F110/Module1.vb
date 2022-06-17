@@ -894,7 +894,7 @@ Module Module1
         Throw New Exception("MergeTwoTables")
     End Function
 
-    Private Sub DeleteFile(ByVal localFolder As String, ByVal fileToRemove As String)
+    Private Sub DeleteFile(localFolder As String, fileToRemove As String)
         Try
             File.Delete(localFolder & "\" & fileToRemove)
         Catch ex As Exception
@@ -902,7 +902,7 @@ Module Module1
         End Try
     End Sub
 
-    Private Sub CopyFile(ByVal localFolder As String, ByVal fileToCopy As String, ByVal destinationFolder As String, ByVal newCopy As String)
+    Private Sub CopyFile(localFolder As String, fileToCopy As String, destinationFolder As String, newCopy As String)
         Try
             File.Copy(localFolder & "\" & fileToCopy, destinationFolder & "\" & newCopy, True)
         Catch ex As Exception
