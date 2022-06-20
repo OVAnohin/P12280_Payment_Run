@@ -48,6 +48,16 @@ Module Module1
     Sub Main()
         Console.WriteLine("Первичный поток: Id {0}", Thread.CurrentThread.ManagedThreadId)
         '*********************** Begin
+        Dim session = GetObject("SAPGUI").GetScriptingEngine.Children(0).Children(0)
+        session.findById("wnd[0]").maximize
+        session.findById("wnd[0]/tbar[0]/okcd").Text = "zf_payplan"
+        session.findById("wnd[0]/tbar[0]/btn[0]").press
+
+        session.findById("wnd[0]/usr/ctxtZW_LAUFD").Text = "17.06.2022"
+        session.findById("wnd[0]/usr/ctxtZW_LAUFI").Text = "RUL03"
+        session.findById("wnd[0]/usr/ctxtZW_ZBUKR-LOW").Text = "RU17"
+        session.findById("wnd[0]/usr/ctxt%ALVL").Text = "/МАКРОС_ПЛАН"
+        session.findById("wnd[0]/tbar[1]/btn[8]").press
 
         '*********************** End
         Console.WriteLine("Первичный поток: Id {0} Is Ended", Thread.CurrentThread.ManagedThreadId)

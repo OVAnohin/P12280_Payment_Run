@@ -111,7 +111,7 @@ Module Module1
             SyncLock _oLock
                 session.findById("wnd[0]").maximize
                 session.findById("wnd[0]/tbar[0]/okcd").Text = transactionName
-                session.findById("wnd[0]").sendVKey(0)
+                session.findById("wnd[0]/tbar[0]/btn[0]").press
 
                 ' грузим LenderAaccount
                 session.findbyid("wnd[0]/usr/btn%_KD_LIFNR_%_APP_%-VALU_PUSH").Press

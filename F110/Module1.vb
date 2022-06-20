@@ -38,14 +38,14 @@ Module Module1
 
     ' *************** input variables
     Dim localFolder As String = "C:\Temp\WorkDir"
-    Dim paymentDate As Date = Convert.ToDateTime("18.06.2022")
-    Dim sheetName As String = "Citibank - RUB PM J 2" 'это у нас имя листа
-    Dim be As String = "RU17" ' текущая BE
+    Dim paymentDate As Date = Convert.ToDateTime("22.06.2022")
+    Dim sheetName As String = "DB - USD, EUR 1" 'это у нас имя листа
+    Dim be As String = "RU01" ' текущая BE
     Dim pathToMailAttachments As String = "\\rus.efesmoscow\DFS\MOSC\Projects.MOSC\Robotic\P12280 Payment Run\WorkDir\MailAttachments"
-    Dim runControlTableInXML As String = "RunControlTableRu17.XML"
-    Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu17.xml"
-    Dim xmlNameErrors_F110 As String = "Errors_F110Ru17.xml"
-    Dim xmlNameJournals As String = "JournalsRu17.xml"
+    Dim runControlTableInXML As String = "RunControlTableRu01.XML"
+    Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu01.xml"
+    Dim xmlNameErrors_F110 As String = "Errors_F110Ru01.xml"
+    Dim xmlNameJournals As String = "JournalsRu01.xml"
     ' *************** input variables
 
     ' *************** in variables
@@ -149,6 +149,8 @@ Module Module1
         'если isCurrentTableComplete, это может быть второй или третий запуск
         'ничего не надо, выходим
         If isCurrentTableComplete AndAlso isRunCreated Then
+            ' ставим isRunCreated в False, что бы не отправлять письмо.
+            isRunCreated = False
             isComplete = True
             Exit Sub
         End If
@@ -223,7 +225,7 @@ Module Module1
             SyncLock _oLock
                 session.findById("wnd[0]").maximize
                 session.findById("wnd[0]/tbar[0]/okcd").Text = "/nF110"
-                session.findById("wnd[0]").sendVKey(0)
+                session.findById("wnd[0]/tbar[0]/btn[0]").press
 
                 Thread.Sleep(500)
 

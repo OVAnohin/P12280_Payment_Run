@@ -47,6 +47,8 @@ Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "CheckCurrentRunsCreatedStag
 EndProject
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "FormationPaymentRegister", "FormationPaymentRegister\FormationPaymentRegister.vbproj", "{B44904E3-4103-490B-B4C0-CDB7C154E38F}"
 EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "GetPaymentsForeignAndOwnBank", "IsPaymentsForeign\GetPaymentsForeignAndOwnBank.vbproj", "{989D2EDE-FB0C-455C-A20A-9EF8A7A932F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -141,6 +143,10 @@ Global
 		{B44904E3-4103-490B-B4C0-CDB7C154E38F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B44904E3-4103-490B-B4C0-CDB7C154E38F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B44904E3-4103-490B-B4C0-CDB7C154E38F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{989D2EDE-FB0C-455C-A20A-9EF8A7A932F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{989D2EDE-FB0C-455C-A20A-9EF8A7A932F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{989D2EDE-FB0C-455C-A20A-9EF8A7A932F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{989D2EDE-FB0C-455C-A20A-9EF8A7A932F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
