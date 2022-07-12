@@ -12,11 +12,11 @@ Module Module1
 
     Sub Main()
 
-        Dim localFolder As String = "C:\Temp\WorkDir"
-        Dim excelFileName As String = "ero Общий план_ХХ-ХХ_недели_RU17.xlsb"
-        'Dim excelFileName As String = "Украина-План_платежей_03-10 week_18.01.2022-09.03.2022.xlsb"
-        Dim paymentDate As Date = Convert.ToDateTime("07.06.2022")
-        Dim xmlFileName As String = "Table_PlanRU17.xml"
+		Dim localFolder As String = "C:\Temp\WorkDir"
+		Dim excelFileName As String = "Общий план_26-33_недели_RU01 (version 1).xlsb"
+		'Dim excelFileName As String = "Украина-План_платежей_03-10 week_18.01.2022-09.03.2022.xlsb"
+		Dim paymentDate As Date = Convert.ToDateTime("28.06.2022")
+		Dim xmlFileName As String = "Table_PlanRU01.xml"
 
 		'*********************** Result
 		'Dim dataFromExcelOut As DataTable
@@ -32,10 +32,13 @@ Module Module1
 		Dim sql As String
 
 		connetionString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & fullFileName & ";" + "Extended Properties='Excel 12.0 Xml;HDR=No;'"
-		sql = "Select * from[" & sheetName & "$]"
+		sql = "Select * from[" & sheetName & "$] Where [F17] like '" & paymentDate & "'"
 		Using oledbCnn = New OleDbConnection(connetionString)
 			Using oledbCmd = New OleDbCommand(sql, oledbCnn)
 				Using oledbAdaper As OleDbDataAdapter = New OleDbDataAdapter(oledbCmd)
+					'oledbAdaper.FillSchema(dataFromExcel, SchemaType.Source)
+					'dataFromExcel.Columns(15).DataType = Type.GetType("System.DateTime")
+					'dataFromExcel.Columns(16).DataType = Type.GetType("System.DateTime")
 					oledbAdaper.Fill(dataFromExcel)
 				End Using
 			End Using
@@ -61,6 +64,15 @@ Module Module1
 		If (dataFromExcel IsNot Nothing) Then
 			If (dataFromExcel.Rows.Count > 0) Then
 
+				dataFromExcel.Columns.Remove("F59")
+				dataFromExcel.Columns.Remove("F60")
+				dataFromExcel.Columns.Remove("F61")
+				dataFromExcel.Columns.Remove("F62")
+				dataFromExcel.Columns.Remove("F63")
+				dataFromExcel.Columns.Remove("F64")
+				dataFromExcel.Columns.Remove("F65")
+				dataFromExcel.AcceptChanges()
+
 				Dim nameOfQColumn As String
 				dataFromExcel.CaseSensitive = False
 
@@ -71,19 +83,33 @@ Module Module1
 				view.RowFilter = filter
 				tempTable = view.ToTable()
 
+				Dim dtCloned As DataTable = tempTable.Clone()
+				dtCloned.Columns(15).DataType = Type.GetType("System.DateTime")
+				dtCloned.Columns(16).DataType = Type.GetType("System.DateTime")
+
+				For i As Integer = 0 To tempTable.Rows.Count - 1
+					dtCloned.ImportRow(tempTable.Rows(i))
+				Next
+
+				tempTable.Reset()
+
 				Try
 					nameOfQColumn = dataFromExcel.Columns(16).ColumnName
+					Console.WriteLine(nameOfQColumn)
 					Dim planedDate As Date
-					For i As Integer = 0 To tempTable.Rows.Count - 1
-						If DBNull.Value.Equals(tempTable.Rows(i)(nameOfQColumn)) Then
-							tempTable.Rows(i)(nameOfQColumn) = Convert.ToDateTime("01.01.0001")
+					For i As Integer = 0 To dtCloned.Rows.Count - 1
+						If DBNull.Value.Equals(dtCloned.Rows(i)(nameOfQColumn)) Then
+							dtCloned.Rows(i)(nameOfQColumn) = Convert.ToDateTime("01.01.0001")
 						End If
 					Next
 
 					'столбец Q = дата платежа
 					'nameOfQColumn = dataFromExcel.Columns(16).ColumnName
-					dataFromExcel = (From row In tempTable.AsEnumerable()
+					dataFromExcel = (From row In dtCloned.AsEnumerable()
 									 Where Date.TryParse(row.Field(Of Date)(nameOfQColumn), planedDate) AndAlso planedDate = paymentDate).CopyToDataTable()
+
+					dtCloned.Reset()
+
 				Catch ex As Exception
 					dataFromExcel = tempTable.Clone()
 				End Try
@@ -93,14 +119,6 @@ Module Module1
 				nameOfQColumn = dataFromExcel.Columns(3).ColumnName
 				view.Sort = "[" & nameOfQColumn & "]"
 				dataFromExcel = view.ToTable()
-
-				dataFromExcel.Columns.Remove("F59")
-				dataFromExcel.Columns.Remove("F60")
-				dataFromExcel.Columns.Remove("F61")
-				dataFromExcel.Columns.Remove("F62")
-				dataFromExcel.Columns.Remove("F63")
-				dataFromExcel.Columns.Remove("F64")
-				dataFromExcel.Columns.Remove("F65")
 
 				dataFromExcelUTC = dataFromExcel.Clone()
 				dataFromExcelUTC.TableName = sheetName
@@ -123,7 +141,7 @@ Module Module1
 
 		Console.WriteLine("End")
 
-    End Sub
+	End Sub
 
     Private Function GetNameSheet(ByVal fullFileName As String, ByVal sheetNumber As Integer) As String
         Dim oMissing As Object = System.Reflection.Missing.Value

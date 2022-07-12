@@ -59,9 +59,11 @@ Module Module1
                     mainTable.CaseSensitive = False
 
                     '•Cити банк\Дойче банк – содержит: «Epap» (на английском) (фильтр по столбцу С(F3)) банк определяется способом платежа (СП) 
-                    ' (столбец U(F21)- для СИТИ- СП- q, для Дойче – B\L)
+                    ' (столбец U(F21)- для СИТИ- СП- q\j, для Дойче – B\L)
+                    ' плюс надо ещё разделить если тут 'да-ТАП'
+
                     sheetName = "Citibank - EPAP "
-                    filter = "[F3] Like '%epap%' And [F21] = 'q'"
+                    filter = "[F1] Not Like '%да-ТАП%' And [F3] Like '%epap%' And ([F21] = 'q' Or [F21] = 'j')"
                     If isCreateExcelFile Then
                         CreateSheetEPAP(localFolder, excelFile, exceptionMessage, mainTable, filter, sheetName)
                     ElseIf nameRun = "Citibank - EPAP" Then
@@ -70,8 +72,28 @@ Module Module1
                         Exit Sub
                     End If
 
+                    sheetName = "Citibank - EPAP_TAP "
+                    filter = "[F1] Like '%да-ТАП%' And [F3] Like '%epap%' And ([F21] = 'q' Or [F21] = 'j')"
+                    If isCreateExcelFile Then
+                        CreateSheetEPAP(localFolder, excelFile, exceptionMessage, mainTable, filter, sheetName)
+                    ElseIf nameRun = "Citibank - EPAP_TAP" Then
+                        outputTable = GetTableEPAP(exceptionMessage, mainTable, filter, sheetName, outputTable)
+                        isComplete = True
+                        Exit Sub
+                    End If
+
                     sheetName = "DB - EPAP "
-                    filter = "[F3] Like '%epap%' And ([F21] = 'b' Or [F21] = 'l')"
+                    filter = "[F1] Not Like '%да-ТАП%' And [F3] Like '%epap%' And ([F21] = 'b' Or [F21] = 'l')"
+                    If isCreateExcelFile Then
+                        CreateSheetEPAP(localFolder, excelFile, exceptionMessage, mainTable, filter, sheetName)
+                    ElseIf nameRun = "DB - EPAP" Then
+                        outputTable = GetTableEPAP(exceptionMessage, mainTable, filter, sheetName, outputTable)
+                        isComplete = True
+                        Exit Sub
+                    End If
+
+                    sheetName = "DB - EPAP_TAP "
+                    filter = "[F1] Like '%да-ТАП%' And [F3] Like '%epap%' And ([F21] = 'b' Or [F21] = 'l')"
                     If isCreateExcelFile Then
                         CreateSheetEPAP(localFolder, excelFile, exceptionMessage, mainTable, filter, sheetName)
                     ElseIf nameRun = "DB - EPAP" Then

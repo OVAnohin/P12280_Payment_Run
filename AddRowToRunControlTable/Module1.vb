@@ -44,6 +44,7 @@ Module Module1
             row("SheetData") = tableToRun
             row("IsComplete") = False
             row("IsRunCreated") = False
+            row("IsJournalCreated") = False
             resultTable.Rows.Add(row)
             resultTable.AcceptChanges()
         End If

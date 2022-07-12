@@ -15,8 +15,8 @@
         Dim table As DataTable = CreateTestTable("XmlDemo")
         PrintValues(table, "Original table")
 
-        Dim fileName As String = "c:\Temp\WorkDir\TestData.xml"
-        table.WriteXml(fileName, XmlWriteMode.WriteSchema)
+        Dim fileName As String = "c:\Temp\WorkDir\test.xml"
+        'table.WriteXml(fileName, XmlWriteMode.WriteSchema)
 
         Dim newTable As New DataTable
         'newTable.Columns.Add(New DataColumn("id", GetType(System.Int32)))

@@ -37,94 +37,100 @@ Module Module1
 
     ' *************** input variables
     Private localFolder As String = "C:\Temp\WorkDir"
+    Private remoteFolder As String = "\\rus.efesmoscow\DFS\MOSC\Projects.MOSC\Robotic\P12280 Payment Run\WorkDir\WorkFiles"
     Private paymentDate As Date = Convert.ToDateTime("14.06.2022")
-    Private isPaymentsForeign As Boolean = True
-    Private identifier As String = "RUP01"
     Private be As String = "RU01" ' текущая BE
-    Private ownBank As String = "DBSBK"
     ' *************** input variables
 
     ' *************** output variables
     Dim exceptionMessage As String
     Dim isComplete As Boolean
+    Dim xlsbRegisterFileNameDBSBK As String
+    Dim xlsbRegisterFileNameCITBK As String
     ' *************** output variables
 
     Sub Main()
         Console.WriteLine("Первичный поток: Id {0}", Thread.CurrentThread.ManagedThreadId)
         '*********************** Begin
+        xlsbRegisterFileNameDBSBK = "Zero"
+        xlsbRegisterFileNameCITBK = "Zero"
         be = be.ToUpper()
-        Dim exportXlsbFile As String = "timeExport.xlsb"
+        'Dim xlsbNamePaymentRegister As String = "Реестр_платежей_" & paymentDate & "_" & be & "_" & ownBank & ".xlsx"
+        Dim shablonPaymentRegister As String = "ShablonPaymentRegister.xlsb"
+        KillExcell()
+        ResetSmartTableInExcel(localFolder, shablonPaymentRegister, "реестр валюта")
+        KillExcell()
+        ResetSmartTableInExcel(localFolder, shablonPaymentRegister, "реестр")
+        KillExcell()
+
         'xmlNamePaymentRegister таблица журналов
-        Dim xmlNamePaymentRegister As String
+        Dim xmlNamePaymentRegister_DBSBK As String = "TablePaymentRegister_" & be & "_DBSBK.xml"
+        Dim xmlNamePaymentRegister_DBSBK_Val As String = "TablePaymentRegister_" & be & "_DBSBK_Val.xml"
+        Dim xmlNamePaymentRegister_CITBK As String = "TablePaymentRegister_" & be & "_CITBK.xml"
+        Dim xmlNamePaymentRegister_CITBK_Val As String = "TablePaymentRegister_" & be & "_CITBK_Val.xml"
 
-        If isPaymentsForeign Then
-            xmlNamePaymentRegister = "TablePaymentRegister_" & be & "_" & ownBank & "_Val.xml"
-        Else
-            xmlNamePaymentRegister = "TablePaymentRegister_" & be & "_" & ownBank & ".xml"
-        End If
+        Dim resultXlsxFile As String
         Dim tablePaymentRegister As Data.DataTable = New Data.DataTable()
-        Try
-            tablePaymentRegister = GetTableFromFile(localFolder, xmlNamePaymentRegister)
-        Catch ex As Exception
-        End Try
 
-        Dim session = GetObject("SAPGUI").GetScriptingEngine.Children(0).Children(0)
-        session.findById("wnd[0]").maximize
-        session.findById("wnd[0]/tbar[0]/okcd").Text = "zf_payplan"
-        session.findById("wnd[0]/tbar[0]/btn[0]").press
+        resultXlsxFile = "Реестр_платежей_" & paymentDate & "_" & be & "_DBSBK.xlsb"
+        DeleteFile(localFolder, resultXlsxFile)
 
-        session.findById("wnd[0]/usr/ctxtZW_LAUFD").Text = paymentDate
-        session.findById("wnd[0]/usr/ctxtZW_LAUFI").Text = identifier
-        session.findById("wnd[0]/usr/ctxtZW_ZBUKR-LOW").Text = be
-        session.findById("wnd[0]/usr/ctxt%ALVL").Text = "/МАКРОС_ПЛАН"
-        session.findById("wnd[0]/tbar[1]/btn[8]").press
-
-        session.findById("wnd[0]/usr/cntlGRID1/shellcont/shell").selectedRows = "0"
-        session.findById("wnd[0]/usr/cntlGRID1/shellcont/shell").contextMenu
-        session.findById("wnd[0]/usr/cntlGRID1/shellcont/shell").selectContextMenuItem("&XXL")
-        session.findById("wnd[1]/usr/radRB_OTHERS").Select
-        session.findById("wnd[1]/usr/cmbG_LISTBOX").Key = "08"
-        session.findById("wnd[1]/tbar[0]/btn[0]").press
-        session.findById("wnd[1]/tbar[0]/btn[0]").press
-        session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[0,0]").Select
-        session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[0,0]").SetFocus
-        session.findById("wnd[1]/tbar[0]/btn[0]").press
-        session.findById("wnd[1]/tbar[0]/btn[0]").press
-
-        Thread.Sleep(300)
-
-        Dim statusBar As String = session.findById("wnd[1]/usr/txtMESSTXT1").Text
-
-        If statusBar <> "Данные в электронной таблице должны быть" Then
-            Throw New Exception("Не выгрузился файл.")
+        If CheckFileExists(localFolder, xmlNamePaymentRegister_DBSBK) Then
+            CopyFile(localFolder, "ShablonPaymentRegister.xlsb", localFolder, resultXlsxFile)
+            SaveTablePaymentRegisterToShablonExcel(localFolder, xmlNamePaymentRegister_DBSBK, resultXlsxFile, 1, tablePaymentRegister, exceptionMessage)
         End If
 
-        DeleteFile(localFolder, exportXlsbFile)
-        FoundExcelAndSaveIt(localFolder, exportXlsbFile)
+        If CheckFileExists(localFolder, xmlNamePaymentRegister_DBSBK_Val) Then
+            If CheckFileExists(localFolder, resultXlsxFile) = False Then
+                CopyFile(localFolder, "ShablonPaymentRegister.xlsb", localFolder, resultXlsxFile)
+            End If
+            SaveTablePaymentRegisterToShablonExcel(localFolder, xmlNamePaymentRegister_DBSBK_Val, resultXlsxFile, 2, tablePaymentRegister, exceptionMessage)
+        End If
 
-        Dim dataFromExcel As Data.DataTable = GetDatatableFromExcel(localFolder, exportXlsbFile, 1)
-        dataFromExcel.TableName = "ExportXlsbFile"
-        Dim paymentsAmountInBB As Double = 0
+        If CheckFileExists(localFolder, resultXlsxFile) Then
+            DeleteFile(remoteFolder, resultXlsxFile)
+            CopyFile(localFolder, resultXlsxFile, remoteFolder, resultXlsxFile)
+            xlsbRegisterFileNameDBSBK = resultXlsxFile
+        End If
 
-        For i As Integer = 0 To dataFromExcel.Rows.Count - 1
-            paymentsAmountInBB += CType(dataFromExcel.Rows(i)("Сумма"), Double)
-        Next
 
-        Dim row As DataRow = dataFromExcel.NewRow()
-        row("Идент#") = CType(dataFromExcel.Rows(0)("Идент#"), String) & " Итоговая сумма:"
-        row("Сумма") = paymentsAmountInBB
-        dataFromExcel.Rows.Add(row)
-        dataFromExcel.AcceptChanges()
+        'То же самое по CITBK
+        resultXlsxFile = "Реестр_платежей_" & paymentDate & "_" & be & "_CITBK.xlsb"
+        DeleteFile(localFolder, resultXlsxFile)
 
-        tablePaymentRegister = MergeTwoTables(tablePaymentRegister, dataFromExcel)
-        SaveDataTableToFile(localFolder & "\" & xmlNamePaymentRegister, tablePaymentRegister)
-        ReturnToMainWindow(session)
+        If CheckFileExists(localFolder, xmlNamePaymentRegister_CITBK) Then
+            CopyFile(localFolder, "ShablonPaymentRegister.xlsb", localFolder, resultXlsxFile)
+            SaveTablePaymentRegisterToShablonExcel(localFolder, xmlNamePaymentRegister_CITBK, resultXlsxFile, 1, tablePaymentRegister, exceptionMessage)
+        End If
+
+        If CheckFileExists(localFolder, xmlNamePaymentRegister_CITBK_Val) Then
+            If CheckFileExists(localFolder, resultXlsxFile) = False Then
+                CopyFile(localFolder, "ShablonPaymentRegister.xlsb", localFolder, resultXlsxFile)
+            End If
+            SaveTablePaymentRegisterToShablonExcel(localFolder, xmlNamePaymentRegister_CITBK_Val, resultXlsxFile, 2, tablePaymentRegister, exceptionMessage)
+        End If
+
+        If CheckFileExists(localFolder, resultXlsxFile) Then
+            DeleteFile(remoteFolder, resultXlsxFile)
+            CopyFile(localFolder, resultXlsxFile, remoteFolder, resultXlsxFile)
+            xlsbRegisterFileNameCITBK = resultXlsxFile
+        End If
 
         isComplete = True
         '*********************** End
         Console.WriteLine("Первичный поток: Id {0} Is Ended", Thread.CurrentThread.ManagedThreadId)
         Console.ReadKey()
 
+    End Sub
+
+    Private Sub SaveTablePaymentRegisterToShablonExcel(localFolder As String, xmlNamePaymentRegister As String, resultXlsxFile As String, sheetNumber As Integer, tablePaymentRegister As Data.DataTable, ByRef exceptionMessage As String)
+        Try
+            tablePaymentRegister = GetTableFromFile(localFolder, xmlNamePaymentRegister)
+        Catch ex As Exception
+        End Try
+        If SaveTableToExcel(localFolder, resultXlsxFile, tablePaymentRegister, sheetNumber, exceptionMessage) = False Then
+            Throw New Exception("Не могу сохранить данные в '" & resultXlsxFile & "'")
+        End If
     End Sub
 
     Private Sub ResetSmartTableInExcel(localFolder As String, fileName As String, sheetName As String)

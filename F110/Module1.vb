@@ -26,6 +26,7 @@ Module Module1
     Private Declare Function EnumChildWindows Lib "user32" (ByVal hWndParent As System.IntPtr, ByVal lpEnumFunc As EnumWindowProc, ByVal lParam As Integer) As Boolean
     Private Delegate Function EnumWindowProc(ByVal hWnd As IntPtr, ByVal lParam As IntPtr) As Boolean
     Private Declare Function SetForegroundWindow Lib "user32.dll" (ByVal hwnd As Long) As Boolean
+    'Private Declare Function SetForegroundWindow Lib "user32.dll" (ByVal hWnd As IntPtr) As Boolean
     Private Declare Function ShowWindow Lib "user32" (ByVal hwnd As Integer, ByVal nCmdShow As Integer) As Integer
     Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Integer, ByRef lpdwProcessId As Integer) As Integer
 
@@ -38,14 +39,14 @@ Module Module1
 
     ' *************** input variables
     Dim localFolder As String = "C:\Temp\WorkDir"
-    Dim paymentDate As Date = Convert.ToDateTime("22.06.2022")
-    Dim sheetName As String = "DB - USD, EUR 1" 'это у нас имя листа
-    Dim be As String = "RU01" ' текущая BE
+    Dim paymentDate As Date = Convert.ToDateTime("07.07.2022")
+    Dim sheetName As String = "Citibank - EPAP 0" 'это у нас имя листа
+    Dim be As String = "RU17" ' текущая BE
     Dim pathToMailAttachments As String = "\\rus.efesmoscow\DFS\MOSC\Projects.MOSC\Robotic\P12280 Payment Run\WorkDir\MailAttachments"
-    Dim runControlTableInXML As String = "RunControlTableRu01.XML"
-    Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu01.xml"
-    Dim xmlNameErrors_F110 As String = "Errors_F110Ru01.xml"
-    Dim xmlNameJournals As String = "JournalsRu01.xml"
+    Dim runControlTableInXML As String = "RunControlTableRu17.XML"
+    Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu17.xml"
+    Dim xmlNameErrors_F110 As String = "Errors_F110Ru17.xml"
+    Dim xmlNameJournals As String = "JournalsRu17.xml"
     ' *************** input variables
 
     ' *************** in variables
@@ -80,6 +81,7 @@ Module Module1
         Dim isExit As Boolean = False
         Dim runControlTable As Data.DataTable = New Data.DataTable()
         Dim columns As DataColumnCollection = runControlTable.Columns
+        Dim paymentDateEPAP As Date
 
         totalRunAmount = 0.0
         numberOfPayments = 0
@@ -134,7 +136,12 @@ Module Module1
             view = New DataView(tableCurrentRun)
             view.Sort = "[F16] DESC"
             tableCurrentRun = view.ToTable()
-            paymentDate = tableCurrentRun.Rows(0)("F16")
+            paymentDateEPAP = tableCurrentRun.Rows(0)("F16")
+            If paymentDate > paymentDateEPAP Then
+                paymentDateEPAP = paymentDate
+            End If
+        Else
+            paymentDateEPAP = paymentDate
         End If
 
         'Currency
@@ -338,8 +345,13 @@ Module Module1
 
                 session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/tblSAPF110VCTRL_FKTTAB/txtF110V-BUKLS[0,0]").text = be
                 session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/tblSAPF110VCTRL_FKTTAB/ctxtF110V-ZWELS[1,0]").text = paymentMethod
-                session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/tblSAPF110VCTRL_FKTTAB/ctxtF110V-NEDAT[2,0]").text = paymentDate.AddDays(1)
-                session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/subSUBSCR_SEL:SAPF110V:7004/btn%_R_LIFNR_%_APP_%-VALU_PUSH").press
+                session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/tblSAPF110VCTRL_FKTTAB/ctxtF110V-NEDAT[2,0]").text = paymentDateEPAP.AddDays(1)
+
+                If sheetName.Contains("debtors") Then
+                    session.findbyid("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/subSUBSCR_SEL:SAPF110V:7004/btn%_R_KUNNR_%_APP_%-VALU_PUSH").Press
+                Else
+                    session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpPAR/ssubSUBSCREEN_BODY:SAPF110V:0202/subSUBSCR_SEL:SAPF110V:7004/btn%_R_LIFNR_%_APP_%-VALU_PUSH").press
+                End If
 
                 UploadFromFileInMultipleSelectionWindow(session, lenderAccountFile, localFolder)
 
@@ -510,19 +522,97 @@ Module Module1
                 If Not session.findbyid("wnd[0]/usr/lblREGUH-LAUFI", False) Is Nothing Then
                     Dim paneText As String = session.findbyid("wnd[0]/sbar/pane[0]").Text
                     If paneText.Contains("не фигурирует, исправьте") Then
+                        ' перейти на страницу для выгрузки журнала
                         session.findById("wnd[0]/tbar[0]/btn[15]").press
+                        session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpLOG").select
+                        session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpLOG/ssubSUBSCREEN_BODY:SAPF110V:0204/btnPUSH_VOPR").press
+                        session.findById("wnd[0]/mbar/menu[1]/menu[4]/menu[1]").select
+
+                        'выгружаем
+                        session.findById("wnd[1]/usr/radRB_OTHERS").setFocus
+                        session.findById("wnd[1]/usr/radRB_OTHERS").select
+                        session.findById("wnd[1]/usr/cmbG_LISTBOX").setFocus
+                        session.findById("wnd[1]/usr/cmbG_LISTBOX").Key = "04"
+
+                        Thread.Sleep(500)
+                        TaskPressButtonOk(session)
+                        If (IsGuiModalWindow(session, "wnd[1]")) Then
+                            session.findById("wnd[1]/usr/ctxtDY_PATH").text = localFolder
+                            session.findById("wnd[1]/usr/ctxtDY_FILENAME").text = errorsLogFileNameTxt
+                            session.findById("wnd[1]/tbar[0]/btn[11]").press
+                        Else
+                            'Real Mode
+                            TryToFoundWindowAndSetForeground("Открыть")
+                            SaveAsWindow(errorsLogFileNameTxt, localFolder, "Сохранение", "Сохранить")
+                        End If
+
+                        ' Ищем наш файл лога, сохраняем его и добавляем на лист 2
+                        DeleteFile(localFolder, errorsLogFileNameXlsb)
+                        If TryFindNotepadAndCloseIt() = False Then
+                            Throw New Exception("Нет выгрузки ")
+                        End If
+
+                        If CheckFileExists(localFolder, errorsLogFileNameTxt) = False Then
+                            Throw New Exception("Нет выгрузки ")
+                        End If
+
+                        RenameFile(localFolder, errorsLogFileNameTxt, localFolder, errorsLogFileNameXml)
+                        OpenXmlFileAndSaveIt(localFolder, errorsLogFileNameXml, errorsLogFileNameXlsb)
+
+                        Dim dataFromExcel As System.Data.DataTable = GetDatatableFromExcel(localFolder, errorsLogFileNameXlsb, 1)
+                        columns = dataFromExcel.Columns
+                        If Not columns.Contains("Identifier") Then
+                            dataFromExcel.Columns.Add("Identifier", Type.GetType("System.String"))
+                        End If
+                        For i As Integer = 0 To dataFromExcel.Rows.Count - 1
+                            dataFromExcel.Rows(i)("Identifier") = identifier
+                        Next
+                        columns = tableJournals.Columns
+                        If Not columns.Contains("Identifier") Then
+                            tableJournals.Columns.Add("Identifier", Type.GetType("System.String"))
+                        End If
+                        tableJournals = MergeTwoTables(tableJournals, dataFromExcel)
+                        tableJournals.TableName = "JournalsLog"
+                        'тут надо dataFromExcel типа сохранить на лист, это у нас то что не вошло в выбор документов
+                        tableJournals.AcceptChanges()
+                        SaveDataTableToFile(localFolder & "\" & xmlNameJournals, tableJournals)
+                        If SaveTableToExcel(localFolder, xlsbNameNotIncludedTable, tableJournals, 3, exceptionMessage) = False Then
+                            Throw New Exception("Не могу сохранить данные в '" & xlsbNameNotIncludedTable & "'")
+                        End If
+
+                        session.findById("wnd[0]/tbar[0]/btn[3]").press
+                        session.findById("wnd[0]/usr/tabsF110_TABSTRIP/tabpSTA").select
                         session.findById("wnd[0]/mbar/menu[1]/menu[1]/menu[3]").select
                         session.findById("wnd[1]/usr/btnSPOP-OPTION1").press
                         Thread.Sleep(300)
+
+                        isComplete = True
+                        isRunCreated = False
                         ReturnToMainWindow(session)
 
-                        Throw New Exception("Нужно сделать запись что не получилось создать прогон")
+                        tablesToRun.Rows(startSearchRow + 1)("IsComplete") = True
+                        tablesToRun.AcceptChanges()
+                        SaveDataTableToFile(localFolder & "\" & tablesToRunFileNameXml, tablesToRun)
+                        ' обновить данные в глобальной таблице
+                        runControlTable = GetTableFromFile(localFolder, runControlTableInXML)
+                        For i As Integer = 0 To runControlTable.Rows.Count - 1
+                            If runControlTable.Rows(i)("SheetName") = sheetName Then
+                                runControlTable.Rows(i)("IsComplete") = True
+                                Exit For
+                            End If
+                        Next
+                        runControlTable.AcceptChanges()
+                        SaveDataTableToFile(localFolder & "\" & runControlTableInXML, runControlTable)
+                        runControlTable = New Data.DataTable()
+
+                        Exit Sub
                         'Нужно сделать запись что не получилось создать прогон
                     End If
                 End If
 
                 'Проверяем что все нашли
                 'Отправляем почту на получателя, это работа макроса.
+                SetForegroundWindow(session.findById("wnd[0]").Handle)
                 screenShotFileName = RemoveUnnecessaryChar(sheetName) & "_ScrSht"
                 screenShotFileName = ChangeScreenShotFileName(screenShotFileName)
                 TakeScreenShot(localFolder, screenShotFileName)
@@ -598,9 +688,7 @@ Module Module1
                         End If
 
                         ' Ищем наш файл лога, сохраняем его и добавляем на лист 2
-                        'DeleteFile(localFolder, "errorsLog.xlsb")
                         DeleteFile(localFolder, errorsLogFileNameXlsb)
-                        'FoundExcelAndSaveIt(localFolder, "errorsLog.xlsb")
                         If TryFindNotepadAndCloseIt() = False Then
                             Throw New Exception("Нет выгрузки ")
                         End If
@@ -610,7 +698,6 @@ Module Module1
                         End If
 
                         RenameFile(localFolder, errorsLogFileNameTxt, localFolder, errorsLogFileNameXml)
-
                         OpenXmlFileAndSaveIt(localFolder, errorsLogFileNameXml, errorsLogFileNameXlsb)
 
                         Dim dataFromExcel As System.Data.DataTable = GetDatatableFromExcel(localFolder, errorsLogFileNameXlsb, 1)
@@ -655,8 +742,6 @@ Module Module1
                 'нужно обновить у таблицы tablesToRun identifier and IsRunCreated
                 UpdateIdentifierInXML(localFolder, identifier, tablesToRun, tablesToRunFileNameXml, sheetName, isRunCreated)
                 'нужно обновить у глобальной таблицы identifier
-                'Dim runControlTableInXML As String = "RunControlTable.XML"
-                'Dim runControlTable As Data.DataTable = GetTableFromFile(localFolder, runControlTableInXML)
                 runControlTable = GetTableFromFile(localFolder, runControlTableInXML)
                 UpdateIdentifierInXML(localFolder, identifier, runControlTable, runControlTableInXML, sheetName, isRunCreated)
                 runControlTable = New Data.DataTable()

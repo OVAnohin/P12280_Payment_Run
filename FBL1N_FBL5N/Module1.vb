@@ -25,11 +25,17 @@ Module Module1
     Private Declare Function EnumChildWindows Lib "user32" (ByVal hWndParent As System.IntPtr, ByVal lpEnumFunc As EnumWindowProc, ByVal lParam As Integer) As Boolean
     Private Delegate Function EnumWindowProc(ByVal hWnd As IntPtr, ByVal lParam As IntPtr) As Boolean
     Private Declare Function SetForegroundWindow Lib "user32.dll" (ByVal hwnd As Long) As Boolean
+    'Private Declare Function SetForegroundWindow Lib "user32.dll" (ByVal hWnd As IntPtr) As Boolean
     Private Declare Function ShowWindow Lib "user32" (ByVal hwnd As Integer, ByVal nCmdShow As Integer) As Integer
     Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Integer, ByRef lpdwProcessId As Integer) As Integer
+    Private Declare Sub keybd_event Lib "user32.dll" (bVk As Byte, bScan As Byte, dwFlags As UInteger, dwExtraInfo As Integer)
 
     Private Const WM_COMMAND = &H111
     Private Const BM_CLICK As Integer = &HF5
+    Private Const ALT As Integer = &HA4
+    Private Const EXTENDEDKEY As Integer = &H1
+    Private Const KEYUP As Integer = &H2
+    Private Const Restore As UInteger = 9
 
     ' *************** Thread
     Private _thread As Thread
@@ -37,10 +43,10 @@ Module Module1
 
     ' *************** input variables
     Dim localFolder As String = "C:\Temp\WorkDir"
-    Dim paymentDate As Date = Convert.ToDateTime("07.06.2022")
-    Dim sheetName As String = "Citibank - RUB PM Q 0" 'это у нас имя листа
-    Dim be As String = "RU17"
-    Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu17.xml"
+    Dim paymentDate As Date = Convert.ToDateTime("11.07.2022")
+    Dim sheetName As String = "Citibank - RUB debtors I 0" 'это у нас имя листа
+    Dim be As String = "RU01"
+    Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu01.xml"
     Dim xmlNameErrors_FBL1N_FBL5N As String = "Errors_FBL1N_FBL5N.xml"
     ' *************** input variables
 
@@ -69,19 +75,18 @@ Module Module1
         Dim xlsbNameNotIncludedTable As String = Replace(xmlNameNotIncludedTable, ".xml", ".xlsb")
         Dim timeout As DateTime
         Dim connectionList As List(Of String) = New List(Of String)
-        Dim connection = GetObject("SAPGUI").GetScriptingEngine.Children(0)
         Dim isExit As Boolean = False
         Dim ownBank As String = GetOwnBank(sheetName)
         Dim numberOfDocuments As Integer ' 'это у нас количество строк на листе оно должно быть равно количеству viewPosition
         Dim transactionName As String = GetTransactionName(sheetName)
         Dim outputFormat As String = GetOutputFormat(transactionName, be)
+        Dim isDaTapPresent As Boolean
 
         'удаляем старые файлы для выгрузки xmlFileName and xlsbFileName
         DeleteFile(localFolder, xmlFileName)
         DeleteFile(localFolder, xlsbFileName)
         DeleteFile(localFolder, txtFileName)
 
-        ' текущая таблица для запуска или текущий лист
         ' текущая таблица для запуска или текущий лист
         Dim tableCurrentRun As System.Data.DataTable = New Data.DataTable()
         'получаем данные текущего прогона из таблицы "TablesToRun.xml", она обновляется тут в коде
@@ -94,16 +99,18 @@ Module Module1
         Next
         numberOfDocuments = tableCurrentRun.Rows.Count
 
+        For i As Integer = 0 To tableCurrentRun.Rows.Count - 1
+            If CType(tableCurrentRun.Rows(i)("F1"), String).Contains("да-ТАП") AndAlso CType(tableCurrentRun.Rows(i)("F3"), String).Contains("EPAP") Then
+                isDaTapPresent = True
+            End If
+        Next
+
         'таблица не включенных проводок в прогон
         Dim tableErrors_FBL1N_FBL5N As Data.DataTable = New Data.DataTable()
         Try
             tableErrors_FBL1N_FBL5N = GetTableFromFile(localFolder, xmlNameErrors_FBL1N_FBL5N)
         Catch ex As Exception
         End Try
-
-        'Dim view As DataView
-        'Dim tempTable As System.Data.DataTable
-        'Dim filter As String
 
         Dim session = GetObject("SAPGUI").GetScriptingEngine.Children(0).Children(0)
 
@@ -114,11 +121,23 @@ Module Module1
                 session.findById("wnd[0]/tbar[0]/btn[0]").press
 
                 ' грузим LenderAaccount
-                session.findbyid("wnd[0]/usr/btn%_KD_LIFNR_%_APP_%-VALU_PUSH").Press
+                If sheetName.Contains("debtors") Then
+                    session.findbyid("wnd[0]/usr/btn%_DD_KUNNR_%_APP_%-VALU_PUSH").Press
+                Else
+                    session.findbyid("wnd[0]/usr/btn%_KD_LIFNR_%_APP_%-VALU_PUSH").Press
+                End If
+                ''это у нас эмуляция нажатия alt
+                'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or 0, 0)
+                'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or KEYUP, 0)
+                ''/это у нас эмуляция нажатия alt
                 UploadFromFileInMultipleSelectionWindow(session, "LenderAaccount.txt", localFolder)
 
                 ' Грузим БЕ
-                session.findbyid("wnd[0]/usr/btn%_KD_BUKRS_%_APP_%-VALU_PUSH").Press
+                If sheetName.Contains("debtors") Then
+                    session.findbyid("wnd[0]/usr/btn%_DD_BUKRS_%_APP_%-VALU_PUSH").Press
+                Else
+                    session.findbyid("wnd[0]/usr/btn%_KD_BUKRS_%_APP_%-VALU_PUSH").Press
+                End If
                 UploadFromFileInMultipleSelectionWindow(session, "forUpLoadBE.txt", localFolder)
 
                 ' Номер документа – номер проводки, через специальную вставку
@@ -237,9 +256,12 @@ Module Module1
                 session.findById("wnd[0]").sendVKey(5)
                 session.findById("wnd[0]").sendVKey(45)
                 session.findById("wnd[1]/usr/ctxt*BSEG-HBKID").text = ownBank
-                If sheetName.Contains("TAP") Then
+                If sheetName.Contains("TAP") OrElse sheetName.Contains("debtors") Then
+                    session.findById("wnd[1]/usr/ctxt*BSEG-ZLSPR").text = " "
+                ElseIf isDaTapPresent Then
                     session.findById("wnd[1]/usr/ctxt*BSEG-ZLSPR").text = " "
                 End If
+
                 session.findById("wnd[1]/usr/ctxt*BSEG-HBKID").setFocus
                 session.findById("wnd[1]/usr/ctxt*BSEG-HBKID").caretPosition = 5
                 'Временно отключаем изменение документов.
@@ -354,7 +376,7 @@ Module Module1
         Return isComplete
     End Function
 
-    Private Sub ResetSmartTableInExcel(ByVal localFolder As String, ByVal fileName As String, ByVal sheetName As String)
+    Private Sub ResetSmartTableInExcel(localFolder As String, fileName As String, sheetName As String)
         Dim xlApp As Excel.Application
         Dim xlWorkBook As Excel.Workbook
         Dim xlWorkSheet As Excel.Worksheet
@@ -475,7 +497,7 @@ Module Module1
         End If
     End Sub
 
-    Private Sub UploadFromFileInMultipleSelectionWindow(session As Object, ByVal fileToUpload As String, ByVal localFolder As String)
+    Private Sub UploadFromFileInMultipleSelectionWindow(session As Object, fileToUpload As String, localFolder As String)
         Dim timeout As DateTime
         Dim isExit As Boolean
         ' wait window
@@ -492,6 +514,9 @@ Module Module1
         End While
         ' wait window
 
+        'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or 0, 0)
+        'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or KEYUP, 0)
+        'Console.WriteLine(session.findById("wnd[1]").Handle)
         SetForegroundWindow(session.findById("wnd[1]").Handle)
         session.findById("wnd[1]/tbar[0]/btn[16]").press
 
@@ -1120,7 +1145,7 @@ Module Module1
         Return Process.GetProcessById(id)
     End Function
 
-    Private Function SaveTableToExcel(ByVal localFolder As String, ByVal excelFile As String, ByVal tempTable As Data.DataTable, ByVal sheetNumber As Integer, ByRef exceptionMessage As String) As Boolean
+    Private Function SaveTableToExcel(localFolder As String, excelFile As String, tempTable As Data.DataTable, sheetNumber As Integer, ByRef exceptionMessage As String) As Boolean
         Dim xlApp As Excel.Application = New Excel.Application()
         Dim xlWorkBook As Object = New Object()
         Dim xlWorkSheet As Object = New Object()
