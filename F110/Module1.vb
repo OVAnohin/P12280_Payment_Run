@@ -29,7 +29,7 @@ Module Module1
     'Private Declare Function SetForegroundWindow Lib "user32.dll" (ByVal hWnd As IntPtr) As Boolean
     Private Declare Function ShowWindow Lib "user32" (ByVal hwnd As Integer, ByVal nCmdShow As Integer) As Integer
     Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Integer, ByRef lpdwProcessId As Integer) As Integer
-    Private Declare Sub KeyboardEvent Lib "user32.dll" (bVk As Byte, bScan As Byte, dwFlags As UInteger, dwExtraInfo As Integer)
+    Private Declare Sub keybd_event Lib "user32.dll" (bVk As Byte, bScan As Byte, dwFlags As UInteger, dwExtraInfo As Integer)
 
     'Private Const WM_COMMAND = &H111
     Private Const BM_CLICK As Integer = &HF5
@@ -1238,7 +1238,7 @@ Module Module1
         End If
     End Sub
 
-    Private Sub UploadFromFileInMultipleSelectionWindow(ByVal session As Object, ByVal fileToUpload As String, ByVal localFolder As String)
+    Private Sub UploadFromFileInMultipleSelectionWindow(session As Object, fileToUpload As String, localFolder As String)
         Dim timeout As DateTime
         Dim isExit As Boolean
         ' wait window
@@ -1254,7 +1254,18 @@ Module Module1
             End If
         End While
         ' wait window
+        'Simulate a key press
+        'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or 0, 0)
+        'Simulate a key release
+        'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or KEYUP, 0)
 
+        'Simulate a key press
+        keybd_event(CType(VK_UP, Byte), 0, EXTENDEDKEY Or 0, 0)
+        'Simulate a key release
+        keybd_event(CType(VK_UP, Byte), 0, EXTENDEDKEY Or KEYUP, 0)
+
+
+        'Console.WriteLine(session.findById("wnd[1]").Handle)
         SetForegroundWindow(session.findById("wnd[1]").Handle)
         session.findById("wnd[1]/tbar[0]/btn[16]").press
 
