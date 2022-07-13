@@ -29,9 +29,15 @@ Module Module1
     'Private Declare Function SetForegroundWindow Lib "user32.dll" (ByVal hWnd As IntPtr) As Boolean
     Private Declare Function ShowWindow Lib "user32" (ByVal hwnd As Integer, ByVal nCmdShow As Integer) As Integer
     Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Integer, ByRef lpdwProcessId As Integer) As Integer
+    Private Declare Sub KeyboardEvent Lib "user32.dll" (bVk As Byte, bScan As Byte, dwFlags As UInteger, dwExtraInfo As Integer)
 
-    Private Const WM_COMMAND = &H111
+    'Private Const WM_COMMAND = &H111
     Private Const BM_CLICK As Integer = &HF5
+    Private Const ALT As Integer = &HA4
+    Private Const EXTENDEDKEY As Integer = &H1
+    Private Const KEYUP As Integer = &H2
+    Private Const VK_UP As Integer = &H26
+    'Private Const Restore As UInteger = 9
 
     ' *************** Thread
     Private _thread As Thread

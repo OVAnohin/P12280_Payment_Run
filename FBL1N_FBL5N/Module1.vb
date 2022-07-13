@@ -30,12 +30,13 @@ Module Module1
     Private Declare Function GetWindowThreadProcessId Lib "user32.dll" (ByVal hwnd As Integer, ByRef lpdwProcessId As Integer) As Integer
     Private Declare Sub keybd_event Lib "user32.dll" (bVk As Byte, bScan As Byte, dwFlags As UInteger, dwExtraInfo As Integer)
 
-    Private Const WM_COMMAND = &H111
+    'Private Const WM_COMMAND = &H111
     Private Const BM_CLICK As Integer = &HF5
     Private Const ALT As Integer = &HA4
     Private Const EXTENDEDKEY As Integer = &H1
     Private Const KEYUP As Integer = &H2
-    Private Const Restore As UInteger = 9
+    Private Const VK_UP As Integer = &H26
+    'Private Const Restore As UInteger = 9
 
     ' *************** Thread
     Private _thread As Thread
@@ -43,7 +44,7 @@ Module Module1
 
     ' *************** input variables
     Dim localFolder As String = "C:\Temp\WorkDir"
-    Dim paymentDate As Date = Convert.ToDateTime("11.07.2022")
+    Dim paymentDate As Date = Convert.ToDateTime("13.07.2022")
     Dim sheetName As String = "Citibank - RUB debtors I 0" 'это у нас имя листа
     Dim be As String = "RU01"
     Dim xmlNameNotIncludedTable As String = "NotIncludedTableRu01.xml"
@@ -513,9 +514,17 @@ Module Module1
             End If
         End While
         ' wait window
-
+        'Simulate a key press
         'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or 0, 0)
+        'Simulate a key release
         'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or KEYUP, 0)
+
+        'Simulate a key press
+        keybd_event(CType(VK_UP, Byte), 0, EXTENDEDKEY Or 0, 0)
+        'Simulate a key release
+        keybd_event(CType(VK_UP, Byte), 0, EXTENDEDKEY Or KEYUP, 0)
+
+
         'Console.WriteLine(session.findById("wnd[1]").Handle)
         SetForegroundWindow(session.findById("wnd[1]").Handle)
         session.findById("wnd[1]/tbar[0]/btn[16]").press
