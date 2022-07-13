@@ -127,10 +127,6 @@ Module Module1
                 Else
                     session.findbyid("wnd[0]/usr/btn%_KD_LIFNR_%_APP_%-VALU_PUSH").Press
                 End If
-                ''это у нас эмуляция нажатия alt
-                'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or 0, 0)
-                'keybd_event(CType(ALT, Byte), &H45, EXTENDEDKEY Or KEYUP, 0)
-                ''/это у нас эмуляция нажатия alt
                 UploadFromFileInMultipleSelectionWindow(session, "LenderAaccount.txt", localFolder)
 
                 ' Грузим БЕ
